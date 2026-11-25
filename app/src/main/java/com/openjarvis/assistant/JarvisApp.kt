@@ -45,6 +45,7 @@ import com.openjarvis.assistant.ai.OpenAiCompatibleClient
 import com.openjarvis.assistant.device.LocalCommandRouter
 import com.openjarvis.assistant.security.EncryptedSettings
 import com.openjarvis.assistant.security.ProviderSettings
+import com.openjarvis.assistant.security.StoredChatMessage
 import com.openjarvis.assistant.voice.SpeechController
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
@@ -189,10 +190,11 @@ private fun ChatScreen(
     speechController: SpeechController,
     context: Context
 ) {
+    val systemPrompt = "You are Open Jarvis, a helpful personal assistant. Reply naturally in Roman Urdu or English based on the user's language. Never claim to control the phone unless an implemented, permission-granted tool actually did it."
     val messages = remember {
-        mutableStateListOf(
-            ChatMessage("system", "You are Open Jarvis, a helpful personal assistant. Reply naturally in Roman Urdu or English based on the user's language. Never claim to control the phone unless an implemented, permission-granted tool actually did it.")
-        )
+        mutableStateListOf(ChatMessage("system", systemPrompt)).apply {
+            secureSettings.loadConversation().forEach { add(ChatMessage(it.role, it.content)) }
+        }
     }
     var input by remember { mutableStateOf("") }
     var status by remember { mutableStateOf(if (provider == null) "Set up an AI provider first." else "Connected configuration loaded. Send a message.") }
@@ -200,6 +202,14 @@ private fun ChatScreen(
     val scope = rememberCoroutineScope()
     val client = remember { OpenAiCompatibleClient() }
     val localRouter = remember { LocalCommandRouter(context) }
+    fun persistHistory() {
+        runCatching {
+            secureSettings.saveConversation(
+                messages.filter { it.role == "user" || it.role == "assistant" }
+                    .map { StoredChatMessage(it.role, it.content) }
+            )
+        }
+    }
 
     fun sendMessage(text: String) {
         val prompt = text.trim()
@@ -208,6 +218,7 @@ private fun ChatScreen(
         if (offlineAnswer != null) {
             messages.add(ChatMessage("user", prompt))
             messages.add(ChatMessage("assistant", offlineAnswer))
+            persistHistory()
             input = ""
             status = "Offline command completed."
             speechController.speak(offlineAnswer, Locale.US)
@@ -218,6 +229,7 @@ private fun ChatScreen(
             return
         }
         messages.add(ChatMessage("user", prompt))
+        persistHistory()
         input = ""
         busy = true
         status = "Jarvis is thinking…"
@@ -225,11 +237,13 @@ private fun ChatScreen(
             try {
                 val answer = client.complete(provider, messages.toList())
                 messages.add(ChatMessage("assistant", answer))
+                persistHistory()
                 status = "Reply received."
                 speechController.speak(answer, Locale.US)
             } catch (error: Exception) {
                 status = error.message ?: "AI request failed. Check internet and provider settings."
                 messages.add(ChatMessage("assistant", "I couldn't complete that request: $status"))
+                persistHistory()
             } finally {
                 busy = false
             }
