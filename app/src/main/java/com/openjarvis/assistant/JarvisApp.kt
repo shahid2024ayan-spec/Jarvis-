@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.openjarvis.assistant.ai.ChatMessage
 import com.openjarvis.assistant.ai.OpenAiCompatibleClient
+import com.openjarvis.assistant.device.LocalCommandRouter
 import com.openjarvis.assistant.security.EncryptedSettings
 import com.openjarvis.assistant.security.ProviderSettings
 import com.openjarvis.assistant.voice.SpeechController
@@ -198,12 +199,22 @@ private fun ChatScreen(
     var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val client = remember { OpenAiCompatibleClient() }
+    val localRouter = remember { LocalCommandRouter(context) }
 
     fun sendMessage(text: String) {
         val prompt = text.trim()
         if (prompt.isEmpty() || busy) return
+        val offlineAnswer = localRouter.handle(prompt)
+        if (offlineAnswer != null) {
+            messages.add(ChatMessage("user", prompt))
+            messages.add(ChatMessage("assistant", offlineAnswer))
+            input = ""
+            status = "Offline command completed."
+            speechController.speak(offlineAnswer, Locale.US)
+            return
+        }
         if (provider == null) {
-            status = "Open AI Provider Settings and save your key first."
+            status = "No AI provider configured. Offline commands still work; configure AI in settings."
             return
         }
         messages.add(ChatMessage("user", prompt))
