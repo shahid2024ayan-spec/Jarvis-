@@ -44,6 +44,35 @@ class EncryptedSettings(context: Context) {
         }.getOrNull()
     }
 
+    /** Persist recent user/assistant turns encrypted with the same Keystore-backed key. */
+    fun saveConversation(messages: List<StoredChatMessage>) {
+        val array = org.json.JSONArray()
+        messages.filter { it.role == "user" || it.role == "assistant" }
+            .takeLast(120)
+            .forEach { array.put(JSONObject().put("role", it.role).put("content", it.content)) }
+        val encrypted = encrypt(array.toString().toByteArray(Charsets.UTF_8))
+        prefs.edit().putString("conversation_blob", Base64.encodeToString(encrypted, Base64.NO_WRAP)).apply()
+    }
+
+    fun loadConversation(): List<StoredChatMessage> {
+        val blob = prefs.getString("conversation_blob", null) ?: return emptyList()
+        return runCatching {
+            val array = org.json.JSONArray(String(decrypt(Base64.decode(blob, Base64.NO_WRAP)), Charsets.UTF_8))
+            (0 until array.length()).mapNotNull { index ->
+                val item = array.optJSONObject(index) ?: return@mapNotNull null
+                val role = item.optString("role")
+                val text = item.optString("content")
+                if ((role == "user" || role == "assistant") && text.isNotBlank()) {
+                    StoredChatMessage(role, text)
+                } else null
+            }
+        }.getOrDefault(emptyList())
+    }
+
+    fun clearConversation() {
+        prefs.edit().remove("conversation_blob").apply()
+    }
+
     private fun encrypt(data: ByteArray): ByteArray {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
@@ -83,4 +112,9 @@ data class ProviderSettings(
     val baseUrl: String,
     val apiKey: String,
     val model: String
+)
+
+data class StoredChatMessage(
+    val role: String,
+    val content: String
 )
