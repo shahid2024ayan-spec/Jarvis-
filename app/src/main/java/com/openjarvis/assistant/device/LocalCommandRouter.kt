@@ -85,6 +85,17 @@ class LocalCommandRouter(private val context: Context) {
         if (command.contains("open settings") || command.contains("settings kholo") || command == "settings" || command == "phone settings") {
             return launch(Intent(Settings.ACTION_SETTINGS), "Settings open kar raha hoon.")
         }
+        val appName = when {
+            command.startsWith("open app ") -> command.removePrefix("open app ").trim()
+            command.startsWith("open ") -> command.removePrefix("open ").trim()
+            command.startsWith("app kholo ") -> command.removePrefix("app kholo ").trim()
+            command.endsWith(" kholo") -> command.removeSuffix(" kholo").trim()
+            else -> ""
+        }
+        if (appName.isNotBlank()) {
+            return InstalledAppLauncher(context).launchByName(appName)
+        }
+
         if (command.startsWith("call ") || command.startsWith("message ") || command.startsWith("send ")) {
             return "Safety ke liye calling ya message automatic nahi bheja. Contact choose karne aur confirmation ka dedicated flow zaroori hai."
         }
