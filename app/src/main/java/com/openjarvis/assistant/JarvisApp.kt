@@ -87,16 +87,64 @@ fun JarvisApp(speechController: SpeechController, context: Context) {
             speechController = speechController,
             context = context
         )
+        "memory" -> MemoryScreen(settings = secureSettings, onBack = { page = "home" })
         else -> HomeScreen(
             onChat = { page = "chat" },
             onSettings = { page = "settings" },
-            onVoice = { page = "chat" }
+            onVoice = { page = "chat" },
+            onMemory = { page = "memory" }
         )
     }
 }
 
 @Composable
-private fun HomeScreen(onChat: () -> Unit, onSettings: () -> Unit, onVoice: () -> Unit) {
+private fun MemoryScreen(settings: EncryptedSettings, onBack: () -> Unit) {
+    var draft by remember { mutableStateOf("") }
+    var notes by remember { mutableStateOf(settings.loadMemories()) }
+    var status by remember { mutableStateOf("Notes are encrypted on this device. Save only details you want Jarvis to remember.") }
+    Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF080D18)) {
+        Column(modifier = Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("PRIVATE MEMORY", color = Color(0xFF62D9FF), fontWeight = FontWeight.Bold)
+            Text("Your notes, your control", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+            Text(status, color = Color(0xFF9EACC0), fontSize = 12.sp)
+            OutlinedTextField(value = draft, onValueChange = { draft = it }, modifier = Modifier.fillMaxWidth(), label = { Text("A preference, goal, or useful note") }, maxLines = 4)
+            Button(onClick = {
+                val note = draft.trim()
+                if (note.isNotEmpty()) {
+                    notes = (notes + note).distinct().takeLast(100)
+                    runCatching { settings.saveMemories(notes) }
+                        .onSuccess { draft = ""; status = "Saved securely. You can remove it below." }
+                        .onFailure { status = "Save failed: ${it.message}" }
+                }
+            }, enabled = draft.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("Save memory") }
+            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                itemsIndexed(notes) { index, note ->
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF111A2B))) {
+                        Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(note, color = Color.White, modifier = Modifier.weight(1f))
+                            Button(onClick = {
+                                notes = notes.filterIndexed { i, _ -> i != index }
+                                runCatching { settings.saveMemories(notes) }
+                                    .onSuccess { status = "Memory removed." }
+                                    .onFailure { status = "Update failed: ${it.message}" }
+                            }) { Text("Remove") }
+                        }
+                    }
+                }
+            }
+            Button(onClick = {
+                notes = emptyList()
+                runCatching { settings.clearMemories() }
+                    .onSuccess { status = "All saved memory notes cleared." }
+                    .onFailure { status = "Clear failed: ${it.message}" }
+            }, enabled = notes.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("Clear all memory") }
+            Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Back to Jarvis") }
+        }
+    }
+}
+
+@Composable
+private fun HomeScreen(onChat: () -> Unit, onSettings: () -> Unit, onVoice: () -> Unit, onMemory: () -> Unit) {
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF080D18)) {
         Column(
             modifier = Modifier.fillMaxSize().padding(22.dp),
@@ -127,6 +175,7 @@ private fun HomeScreen(onChat: () -> Unit, onSettings: () -> Unit, onVoice: () -
             HomeFeature("Voice foundation", "Android speech recognition and speech output")
             HomeFeature("Next modules", "Wake word, memory, screen vision and automation")
             Spacer(modifier = Modifier.weight(1f))
+            Button(onClick = onMemory, modifier = Modifier.fillMaxWidth()) { Text("Private Memory & Notes") }
             Button(onClick = onSettings, modifier = Modifier.fillMaxWidth()) { Text("AI Provider Settings") }
             Text("Open Jarvis • Foundation", modifier = Modifier.align(Alignment.CenterHorizontally), color = Color(0xFF61738B), fontSize = 11.sp)
         }
@@ -191,7 +240,9 @@ private fun ChatScreen(
     context: Context
 ) {
     val secureSettings = remember { EncryptedSettings(context) }
-    val systemPrompt = "You are Open Jarvis, a helpful personal assistant. Reply naturally in Roman Urdu or English based on the user's language. Never claim to control the phone unless an implemented, permission-granted tool actually did it."
+    val savedMemories = remember { secureSettings.loadMemories() }
+    val memoryContext = savedMemories.takeIf { it.isNotEmpty() }?.joinToString("\n") ?: "No user memories saved."
+    val systemPrompt = "You are Open Jarvis, a helpful personal assistant. Reply naturally in Roman Urdu or English. Never claim to control the phone unless an implemented, permission-granted tool actually did it. User-approved private memory notes (context only):\n$memoryContext"
     val messages = remember {
         mutableStateListOf(ChatMessage("system", systemPrompt)).apply {
             secureSettings.loadConversation().forEach { add(ChatMessage(it.role, it.content)) }
