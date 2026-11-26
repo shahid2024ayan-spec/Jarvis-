@@ -46,6 +46,7 @@ import com.openjarvis.assistant.device.LocalCommandRouter
 import com.openjarvis.assistant.security.EncryptedSettings
 import com.openjarvis.assistant.security.ProviderSettings
 import com.openjarvis.assistant.security.StoredChatMessage
+import com.openjarvis.assistant.notifications.NotificationIntelligenceScreen
 import com.openjarvis.assistant.voice.SpeechController
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
@@ -89,12 +90,14 @@ fun JarvisApp(speechController: SpeechController, context: Context) {
         )
         "memory" -> MemoryScreen(settings = secureSettings, onBack = { page = "home" })
         "tasks" -> TaskScreen(context = context, onBack = { page = "home" })
+        "notifications" -> NotificationIntelligenceScreen(context = context, onBack = { page = "home" })
         else -> HomeScreen(
             onChat = { page = "chat" },
             onSettings = { page = "settings" },
             onVoice = { page = "chat" },
             onMemory = { page = "memory" },
-            onTasks = { page = "tasks" }
+            onTasks = { page = "tasks" },
+            onNotifications = { page = "notifications" }
         )
     }
 }
@@ -146,7 +149,7 @@ private fun MemoryScreen(settings: EncryptedSettings, onBack: () -> Unit) {
 }
 
 @Composable
-private fun HomeScreen(onChat: () -> Unit, onSettings: () -> Unit, onVoice: () -> Unit, onMemory: () -> Unit, onTasks: () -> Unit) {
+private fun HomeScreen(onChat: () -> Unit, onSettings: () -> Unit, onVoice: () -> Unit, onMemory: () -> Unit, onTasks: () -> Unit, onNotifications: () -> Unit) {
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF080D18)) {
         Column(
             modifier = Modifier.fillMaxSize().padding(22.dp),
@@ -179,6 +182,7 @@ private fun HomeScreen(onChat: () -> Unit, onSettings: () -> Unit, onVoice: () -
             Spacer(modifier = Modifier.weight(1f))
             Button(onClick = onMemory, modifier = Modifier.fillMaxWidth()) { Text("Private Memory & Notes") }
             Button(onClick = onTasks, modifier = Modifier.fillMaxWidth()) { Text("Personal Task Manager") }
+            Button(onClick = onNotifications, modifier = Modifier.fillMaxWidth()) { Text("Notification Intelligence") }
             Button(onClick = onSettings, modifier = Modifier.fillMaxWidth()) { Text("AI Provider Settings") }
             Text("Open Jarvis • Foundation", modifier = Modifier.align(Alignment.CenterHorizontally), color = Color(0xFF61738B), fontSize = 11.sp)
         }
