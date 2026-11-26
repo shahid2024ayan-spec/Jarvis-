@@ -1,5 +1,7 @@
 package com.openjarvis.assistant
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,6 +27,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.text.DateFormat
+import java.util.Calendar
 
 @Composable
 fun TaskScreen(context: Context, onBack: () -> Unit) {
@@ -32,11 +36,46 @@ fun TaskScreen(context: Context, onBack: () -> Unit) {
     var tasks by remember { mutableStateOf(store.load()) }
     var title by remember { mutableStateOf("") }
     var detail by remember { mutableStateOf("") }
-    var status by remember { mutableStateOf("Tasks are stored locally on this device.") }
+    var status by remember { mutableStateOf("Tasks are stored locally. Reminders appear as Android notifications.") }
+
     fun save(next: List<JarvisTask>) {
         runCatching { store.save(next); tasks = next; status = "Saved" }
             .onFailure { status = "Could not save: " + it.message }
     }
+
+    fun chooseReminder(task: JarvisTask) {
+        val selected = Calendar.getInstance()
+        DatePickerDialog(
+            context,
+            { _, year, month, day ->
+                selected.set(Calendar.YEAR, year)
+                selected.set(Calendar.MONTH, month)
+                selected.set(Calendar.DAY_OF_MONTH, day)
+                TimePickerDialog(
+                    context,
+                    { _, hour, minute ->
+                        selected.set(Calendar.HOUR_OF_DAY, hour)
+                        selected.set(Calendar.MINUTE, minute)
+                        selected.set(Calendar.SECOND, 0)
+                        selected.set(Calendar.MILLISECOND, 0)
+                        val at = selected.timeInMillis
+                        runCatching {
+                            TaskReminderScheduler.schedule(context, task.id, task.title, at)
+                            save(tasks.map { if (it.id == task.id) it.copy(reminderAt = at) else it })
+                            status = "Reminder set for " + DateFormat.getDateTimeInstance().format(selected.time)
+                        }.onFailure { status = it.message ?: "Could not schedule reminder." }
+                    },
+                    selected.get(Calendar.HOUR_OF_DAY),
+                    selected.get(Calendar.MINUTE),
+                    false
+                ).show()
+            },
+            selected.get(Calendar.YEAR),
+            selected.get(Calendar.MONTH),
+            selected.get(Calendar.DAY_OF_MONTH)
+        ).apply { datePicker.minDate = System.currentTimeMillis() }.show()
+    }
+
     Surface(Modifier.fillMaxSize(), color = Color(0xFF080D18)) {
         Column(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("JARVIS TASKS", color = Color(0xFF62D9FF), fontWeight = FontWeight.Bold)
@@ -57,15 +96,28 @@ fun TaskScreen(context: Context, onBack: () -> Unit) {
                         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text((if (task.done) "✓ " else "") + task.title, color = Color.White, fontWeight = FontWeight.SemiBold)
                             if (task.detail.isNotBlank()) Text(task.detail, color = Color(0xFF9EACC0), fontSize = 12.sp)
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(onClick = { save(tasks.map { if (it.id == task.id) it.copy(done = !it.done) else it }) }) { Text(if (task.done) "Reopen" else "Complete") }
-                                Button(onClick = { save(tasks.filterNot { it.id == task.id }) }) { Text("Delete") }
+                            task.reminderAt?.let {
+                                Text("Reminder: " + DateFormat.getDateTimeInstance().format(it), color = Color(0xFF62D9FF), fontSize = 12.sp)
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Button(onClick = {
+                                    if (!task.done) TaskReminderScheduler.cancel(context, task.id)
+                                    save(tasks.map { if (it.id == task.id) it.copy(done = !it.done, reminderAt = if (!it.done) null else it.reminderAt) else it })
+                                }) { Text(if (task.done) "Reopen" else "Complete") }
+                                Button(onClick = { chooseReminder(task) }, enabled = !task.done) { Text("Reminder") }
+                                Button(onClick = {
+                                    TaskReminderScheduler.cancel(context, task.id)
+                                    save(tasks.filterNot { it.id == task.id })
+                                }) { Text("Delete") }
                             }
                         }
                     }
                 }
             }
-            Button(onClick = { save(tasks.filterNot { it.done }) }, enabled = tasks.any { it.done }, modifier = Modifier.fillMaxWidth()) { Text("Remove completed") }
+            Button(onClick = {
+                tasks.filter { it.done }.forEach { TaskReminderScheduler.cancel(context, it.id) }
+                save(tasks.filterNot { it.done })
+            }, enabled = tasks.any { it.done }, modifier = Modifier.fillMaxWidth()) { Text("Remove completed") }
             Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Back to Jarvis") }
         }
     }
