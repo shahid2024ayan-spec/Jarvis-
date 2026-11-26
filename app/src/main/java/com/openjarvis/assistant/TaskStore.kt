@@ -4,7 +4,13 @@ import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
 
-data class JarvisTask(val id: Long, val title: String, val detail: String, val done: Boolean)
+data class JarvisTask(
+    val id: Long,
+    val title: String,
+    val detail: String,
+    val done: Boolean,
+    val reminderAt: Long? = null
+)
 
 class TaskStore(context: Context) {
     private val prefs = context.getSharedPreferences("jarvis_tasks", Context.MODE_PRIVATE)
@@ -14,7 +20,10 @@ class TaskStore(context: Context) {
         return (0 until array.length()).mapNotNull { i ->
             runCatching {
                 val item = array.getJSONObject(i)
-                JarvisTask(item.getLong("id"), item.getString("title"), item.optString("detail"), item.optBoolean("done"))
+                JarvisTask(
+                    item.getLong("id"), item.getString("title"), item.optString("detail"),
+                    item.optBoolean("done"), item.optLong("reminderAt").takeIf { it > 0L }
+                )
             }.getOrNull()
         }
     }
@@ -22,8 +31,10 @@ class TaskStore(context: Context) {
     fun save(tasks: List<JarvisTask>) {
         val array = JSONArray()
         tasks.take(300).forEach { task ->
-            array.put(JSONObject().put("id", task.id).put("title", task.title)
-                .put("detail", task.detail).put("done", task.done))
+            val item = JSONObject().put("id", task.id).put("title", task.title)
+                .put("detail", task.detail).put("done", task.done)
+            task.reminderAt?.let { item.put("reminderAt", it) }
+            array.put(item)
         }
         check(prefs.edit().putString("items", array.toString()).commit()) { "Could not save tasks" }
     }
