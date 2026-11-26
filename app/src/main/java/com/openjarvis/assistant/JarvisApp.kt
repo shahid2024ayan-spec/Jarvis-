@@ -88,11 +88,13 @@ fun JarvisApp(speechController: SpeechController, context: Context) {
             context = context
         )
         "memory" -> MemoryScreen(settings = secureSettings, onBack = { page = "home" })
+        "tasks" -> TaskScreen(context = context, onBack = { page = "home" })
         else -> HomeScreen(
             onChat = { page = "chat" },
             onSettings = { page = "settings" },
             onVoice = { page = "chat" },
-            onMemory = { page = "memory" }
+            onMemory = { page = "memory" },
+            onTasks = { page = "tasks" }
         )
     }
 }
@@ -144,7 +146,7 @@ private fun MemoryScreen(settings: EncryptedSettings, onBack: () -> Unit) {
 }
 
 @Composable
-private fun HomeScreen(onChat: () -> Unit, onSettings: () -> Unit, onVoice: () -> Unit, onMemory: () -> Unit) {
+private fun HomeScreen(onChat: () -> Unit, onSettings: () -> Unit, onVoice: () -> Unit, onMemory: () -> Unit, onTasks: () -> Unit) {
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF080D18)) {
         Column(
             modifier = Modifier.fillMaxSize().padding(22.dp),
@@ -176,6 +178,7 @@ private fun HomeScreen(onChat: () -> Unit, onSettings: () -> Unit, onVoice: () -
             HomeFeature("Next modules", "Wake word, memory, screen vision and automation")
             Spacer(modifier = Modifier.weight(1f))
             Button(onClick = onMemory, modifier = Modifier.fillMaxWidth()) { Text("Private Memory & Notes") }
+            Button(onClick = onTasks, modifier = Modifier.fillMaxWidth()) { Text("Personal Task Manager") }
             Button(onClick = onSettings, modifier = Modifier.fillMaxWidth()) { Text("AI Provider Settings") }
             Text("Open Jarvis • Foundation", modifier = Modifier.align(Alignment.CenterHorizontally), color = Color(0xFF61738B), fontSize = 11.sp)
         }
