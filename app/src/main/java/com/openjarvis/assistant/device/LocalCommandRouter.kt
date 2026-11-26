@@ -99,6 +99,7 @@ class LocalCommandRouter(private val context: Context) {
         if (command.contains("open settings") || command.contains("settings kholo") || command == "settings" || command == "phone settings") {
             return launch(Intent(Settings.ACTION_SETTINGS), "Settings open kar raha hoon.")
         }
+
         val appName = when {
             command.startsWith("open app ") -> command.removePrefix("open app ").trim()
             command.startsWith("open ") -> command.removePrefix("open ").trim()
