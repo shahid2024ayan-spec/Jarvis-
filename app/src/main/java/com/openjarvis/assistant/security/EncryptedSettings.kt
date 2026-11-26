@@ -73,6 +73,27 @@ class EncryptedSettings(context: Context) {
         prefs.edit().remove("conversation_blob").apply()
     }
 
+    /** Private, user-managed memory notes encrypted with the device Keystore key. */
+    fun saveMemories(items: List<String>) {
+        val array = org.json.JSONArray()
+        items.map { it.trim() }.filter { it.isNotEmpty() }.distinct().takeLast(100)
+            .forEach { array.put(it) }
+        val encrypted = encrypt(array.toString().toByteArray(Charsets.UTF_8))
+        prefs.edit().putString("memory_blob", Base64.encodeToString(encrypted, Base64.NO_WRAP)).apply()
+    }
+
+    fun loadMemories(): List<String> {
+        val blob = prefs.getString("memory_blob", null) ?: return emptyList()
+        return runCatching {
+            val array = org.json.JSONArray(String(decrypt(Base64.decode(blob, Base64.NO_WRAP)), Charsets.UTF_8))
+            (0 until array.length()).mapNotNull { array.optString(it).takeIf(String::isNotBlank) }
+        }.getOrDefault(emptyList())
+    }
+
+    fun clearMemories() {
+        prefs.edit().remove("memory_blob").apply()
+    }
+
     private fun encrypt(data: ByteArray): ByteArray {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
