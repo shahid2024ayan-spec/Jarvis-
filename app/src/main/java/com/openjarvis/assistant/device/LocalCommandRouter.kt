@@ -4,7 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.BatteryManager
-import android.provider.AlarmClock\nimport android.os.Build
+import android.provider.AlarmClock
+import android.os.Build
 import android.provider.CalendarContract
 import android.provider.MediaStore
 import android.provider.Settings
