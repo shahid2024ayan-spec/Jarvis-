@@ -190,6 +190,7 @@ private fun ChatScreen(
     speechController: SpeechController,
     context: Context
 ) {
+    val secureSettings = remember { EncryptedSettings(context) }
     val systemPrompt = "You are Open Jarvis, a helpful personal assistant. Reply naturally in Roman Urdu or English based on the user's language. Never claim to control the phone unless an implemented, permission-granted tool actually did it."
     val messages = remember {
         mutableStateListOf(ChatMessage("system", systemPrompt)).apply {
