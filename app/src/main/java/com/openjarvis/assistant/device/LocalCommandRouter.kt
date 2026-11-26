@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.BatteryManager
-import android.os.Build
+import android.provider.AlarmClock\nimport android.os.Build
 import android.provider.CalendarContract
 import android.provider.MediaStore
 import android.provider.Settings
@@ -50,6 +50,19 @@ class LocalCommandRouter(private val context: Context) {
         }
         if (command.contains("open camera") || command.contains("camera kholo")) {
             return launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE), "Camera open kar raha hoon.")
+        }
+        if (command.contains("set alarm") || command.contains("alarm lagao") || command.contains("alarm set karo")) {
+            val match = Regex("(?:set alarm|alarm lagao|alarm set karo)\\\\s+(\\\\d{1,2})(?::(\\\\d{2}))?").find(command)
+            val intent = Intent(AlarmClock.ACTION_SET_ALARM).putExtra(AlarmClock.EXTRA_MESSAGE, "Jarvis alarm")
+                .putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+            if (match != null) {
+                val hour = match.groupValues[1].toIntOrNull()
+                val minute = match.groupValues.getOrNull(2)?.toIntOrNull() ?: 0
+                if (hour != null && hour in 0..23 && minute in 0..59) {
+                    intent.putExtra(AlarmClock.EXTRA_HOUR, hour).putExtra(AlarmClock.EXTRA_MINUTES, minute)
+                }
+            }
+            return launch(intent, "Clock app mein alarm form khol raha hoon. Time verify karke Save aap khud karen.")
         }
         if (command.contains("open calendar") || command.contains("calendar kholo")) {
             return launch(Intent(Intent.ACTION_VIEW, CalendarContract.CONTENT_URI), "Calendar open kar raha hoon.")
