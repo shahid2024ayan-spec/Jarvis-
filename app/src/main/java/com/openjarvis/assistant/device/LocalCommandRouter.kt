@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.BatteryManager
 import android.os.Build
 import android.provider.MediaStore
+import android.provider.CalendarContract
 import android.provider.Settings
 import java.text.DateFormat
 import java.util.Date
@@ -43,6 +44,11 @@ class LocalCommandRouter(private val context: Context) {
         }
         if (command.contains("open camera") || command.contains("camera kholo")) {
             return launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE), "Camera open kar raha hoon.")
+        }
+        if (command.contains("open calendar") || command.contains("calendar kholo")) return launch(Intent(Intent.ACTION_VIEW, CalendarContract.CONTENT_URI), "Calendar open kar raha hoon.")
+        if (command.contains("add calendar event") || command.contains("calendar event banao")) {
+            val event = Intent(Intent.ACTION_INSERT).setData(CalendarContract.Events.CONTENT_URI).putExtra(CalendarContract.Events.TITLE, "Jarvis reminder")
+            return launch(event, "Calendar form open hai. Date/time check karke Save aap khud karen.")
         }
         if (command.contains("open browser") || command.contains("browser kholo")) {
             val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com"))
