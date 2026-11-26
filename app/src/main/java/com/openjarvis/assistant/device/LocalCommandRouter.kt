@@ -52,7 +52,7 @@ class LocalCommandRouter(private val context: Context) {
             return launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE), "Camera open kar raha hoon.")
         }
         if (command.contains("set alarm") || command.contains("alarm lagao") || command.contains("alarm set karo")) {
-            val match = Regex("(?:set alarm|alarm lagao|alarm set karo)\\\\s+(\\\\d{1,2})(?::(\\\\d{2}))?").find(command)
+            val match = Regex("(?:set alarm|alarm lagao|alarm set karo)\\s+(\\d{1,2})(?::(\\d{2}))?").find(command)
             val intent = Intent(AlarmClock.ACTION_SET_ALARM).putExtra(AlarmClock.EXTRA_MESSAGE, "Jarvis alarm")
                 .putExtra(AlarmClock.EXTRA_SKIP_UI, false)
             if (match != null) {
