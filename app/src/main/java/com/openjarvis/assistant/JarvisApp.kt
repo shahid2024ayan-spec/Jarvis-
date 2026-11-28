@@ -273,6 +273,55 @@ private fun ChatScreen(
     fun sendMessage(text: String) {
         val prompt = text.trim()
         if (prompt.isEmpty() || busy) return
+        val normalized = prompt.lowercase(Locale.ROOT)
+        val rememberPrefixes = listOf("remember:", "remember that ", "yaad rakhna:", "yaad rakhna ")
+        val forgetPrefixes = listOf("forget:", "forget that ", "bhool jao:", "bhool jao ")
+        val rememberPrefix = rememberPrefixes.firstOrNull { normalized.startsWith(it) }
+        val forgetPrefix = forgetPrefixes.firstOrNull { normalized.startsWith(it) }
+
+        if (rememberPrefix != null) {
+            val note = prompt.substring(rememberPrefix.length).trim().trimEnd('.', ' ')
+            if (note.isBlank()) {
+                status = "Memory text missing. Try: remember: I prefer Roman Urdu."
+                return
+            }
+            val updated = (secureSettings.loadMemories() + note).distinct().takeLast(100)
+            runCatching { secureSettings.saveMemories(updated) }
+                .onSuccess {
+                    val freshContext = updated.joinToString("\\n").ifBlank { "No user memories saved." }
+                    messages[0] = ChatMessage("system", "You are Open Jarvis, a helpful personal assistant. Reply naturally in Roman Urdu or English. Never claim to control the phone unless an implemented, permission-granted tool actually did it. User-approved private memory notes (context only):\\n$freshContext")
+                    messages.add(ChatMessage("user", prompt))
+                    messages.add(ChatMessage("assistant", "Theek hai — maine ye baat encrypted memory mein save kar di. Aap Memory screen se ise dekh ya delete kar sakte hain."))
+                    persistHistory()
+                    input = ""
+                    status = "Memory saved securely."
+                }
+                .onFailure { status = "Memory save failed: ${it.message}" }
+            return
+        }
+
+        if (forgetPrefix != null) {
+            val requested = prompt.substring(forgetPrefix.length).trim().trimEnd('.', ' ')
+            if (requested.isBlank()) {
+                status = "Memory text missing. Try: forget: my old preference."
+                return
+            }
+            val old = secureSettings.loadMemories()
+            val updated = old.filterNot { it.equals(requested, ignoreCase = true) }
+            runCatching { secureSettings.saveMemories(updated) }
+                .onSuccess {
+                    val freshContext = updated.joinToString("\\n").ifBlank { "No user memories saved." }
+                    messages[0] = ChatMessage("system", "You are Open Jarvis, a helpful personal assistant. Reply naturally in Roman Urdu or English. Never claim to control the phone unless an implemented, permission-granted tool actually did it. User-approved private memory notes (context only):\\n$freshContext")
+                    messages.add(ChatMessage("user", prompt))
+                    messages.add(ChatMessage("assistant", if (updated.size < old.size) "Theek hai — woh saved memory remove kar di." else "Exact matching memory nahi mili. Memory screen se notes check kar sakte hain."))
+                    persistHistory()
+                    input = ""
+                    status = "Memory updated."
+                }
+                .onFailure { status = "Memory update failed: ${it.message}" }
+            return
+        }
+
         val offlineAnswer = localRouter.handle(prompt)
         if (offlineAnswer != null) {
             messages.add(ChatMessage("user", prompt))
