@@ -8,7 +8,8 @@ An Android-native personal assistant project built with Kotlin and Jetpack Compo
 - OpenAI-compatible Chat Completions client; endpoint, model ID and API key are configurable.
 - API credentials, recent conversation, and user-managed memory notes encrypted with an Android Keystore AES-GCM key.
 - Offline command router: date/time, battery, device/API information, Settings, Wi-Fi and Bluetooth settings, camera, Calendar, Calendar event form, browser, Maps search, and supported app launch shortcuts (YouTube, WhatsApp, Gmail, Chrome).
-- Personal task list with local persistence and completion/deletion actions.
+- Personal task list with local persistence, completion/deletion actions, date/time reminder picker, scheduled Android alarm notifications, and reminder cancellation on task completion/deletion.
+- User-controlled clear-chat action removes the encrypted local conversation history and resets the visible chat session.
 - Notification listener requiring the user to grant Android Notification Access. Current implementation records notification count, package name and timestamp only; it intentionally does not persist notification text.
 - GitHub Actions Android CI runs unit tests and assembles a debug APK artifact.
 
