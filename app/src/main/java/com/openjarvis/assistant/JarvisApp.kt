@@ -323,10 +323,16 @@ private fun ChatScreen(
         Column(modifier = Modifier.fillMaxSize().padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Button(onClick = onBack) { Text("←") }
-                Column(modifier = Modifier.padding(start = 8.dp)) {
+                Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
                     Text("JARVIS CHAT", color = Color(0xFF62D9FF), fontWeight = FontWeight.Bold)
                     Text(status, color = Color(0xFF9EACC0), fontSize = 11.sp)
                 }
+                Button(onClick = {
+                    secureSettings.clearConversation()
+                    messages.clear()
+                    messages.add(ChatMessage("system", systemPrompt))
+                    status = "Encrypted chat history cleared."
+                }) { Text("Clear") }
             }
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(vertical = 10.dp),
