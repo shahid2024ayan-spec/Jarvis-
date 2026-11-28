@@ -10,12 +10,13 @@ An Android-native personal assistant project built with Kotlin and Jetpack Compo
 - Offline command router: date/time, battery, device/API information, Settings, Wi-Fi and Bluetooth settings, camera, Calendar, Calendar event form, browser, Maps search, and supported app launch shortcuts (YouTube, WhatsApp, Gmail, Chrome).
 - Personal task list with local persistence, completion/deletion actions, date/time reminder picker, scheduled Android alarm notifications, and reminder cancellation on task completion/deletion.
 - User-controlled clear-chat action removes the encrypted local conversation history and resets the visible chat session.
+- Chat memory commands: `remember: ...` / `yaad rakhna: ...` save user-approved notes encrypted; `forget: ...` / `bhool jao: ...` remove an exact matching note. Memory is user-controlled and can be cleared from the Memory screen.
 - Notification listener requiring the user to grant Android Notification Access. Current implementation records notification count, package name and timestamp only; it intentionally does not persist notification text.
 - GitHub Actions Android CI runs unit tests and assembles a debug APK artifact.
 
 ## Feature status — not all requested Jarvis capabilities are finished
 
-The following are **not yet implemented as production-ready modules**: always-on offline “Hey Jarvis” wake-word detection; persistent background voice assistant; true multi-provider profile management/model switching; screen capture and OCR; floating overlay; notification summarization/intelligence beyond metadata; scheduled task alarms; permission-aware deep app control; smart automation routines; offline conversational model; study/PDF/document reader; web research and daily briefing; calendar/reminder sync; Termux/Python/Node integration; GitHub coding agent/APK builder; multi-agent/MCP/skills; biometric app lock and a complete security settings screen.
+The following are **not yet implemented as production-ready modules**: always-on offline “Hey Jarvis” wake-word detection; persistent background voice assistant; true multi-provider profile management/model switching; screen capture and OCR; floating overlay; notification summarization/intelligence beyond metadata; permission-aware deep app control; smart automation routines; offline conversational model; study/PDF/document reader; web research and daily briefing; calendar/reminder sync; Termux/Python/Node integration; GitHub coding agent/APK builder; multi-agent/MCP/skills; biometric app lock and a complete security settings screen.
 
 These require separate implementation, permission UX, device testing, and feature-specific verification. A dashboard button or roadmap item is not evidence that a feature works.
 
